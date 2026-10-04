@@ -141,4 +141,11 @@ try {
   if (err?.code !== "23505") throw err;
 }
 
+await sql`
+  CREATE UNIQUE INDEX IF NOT EXISTS analytics_page_engagement_tick_uidx
+  ON analytics_events (visitor_id, (props->>'tick_id'))
+  WHERE event_name = 'page_engagement'
+    AND props ? 'tick_id'
+`;
+
 console.log("[db-migrate] Schema applied.");

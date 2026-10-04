@@ -15,6 +15,7 @@ import { formatBeatProgress } from "@/lib/beat-progress";
 import {
   formatActiveDays,
   formatDurationMs,
+  formatPageEngagementDisplay,
   formatRelative,
   formatWhen,
   profileDisplayName,
@@ -222,9 +223,10 @@ export function AdminVisitorProfileDrawer({
           <div>
             <dt>Visible on site</dt>
             <dd>
-              {profile.pageEngagementMs > 0
-                ? formatDurationMs(profile.pageEngagementMs)
-                : "—"}
+              {formatPageEngagementDisplay(
+                profile.pageEngagementMs,
+                profile.pageViews > 0,
+              )}
             </dd>
           </div>
           <div>

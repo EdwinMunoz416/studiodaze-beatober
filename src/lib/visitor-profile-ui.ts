@@ -93,6 +93,16 @@ export function visitorStoryLine(input: StoryInput): string {
   return parts.join(" · ");
 }
 
+/** Admin “On page” — distinguish no data vs tracked but under display floor. */
+export function formatPageEngagementDisplay(
+  ms: number,
+  hasPageView: boolean,
+): string {
+  if (ms > 0) return formatDurationMs(ms);
+  if (hasPageView) return "<1s";
+  return "—";
+}
+
 export function formatDurationMs(ms: number): string {
   if (!ms || ms < 1000) return "<1s";
   /** Floor so the label never ticks backward when ms only grows. */

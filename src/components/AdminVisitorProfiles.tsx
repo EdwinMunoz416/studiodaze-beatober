@@ -10,6 +10,7 @@ import { formatBeatProgress } from "@/lib/beat-progress";
 import {
   formatActiveDays,
   formatDurationMs,
+  formatPageEngagementDisplay,
   formatRelative,
   formatWhen,
   profileDisplayName,
@@ -228,11 +229,9 @@ function VisitorCard({
           <div>
             <dt>On page</dt>
             <dd
-              title={`${v.pageEngagementMs} ms total · saved in ~30s chunks while the tab is visible`}
+              title={`${v.pageEngagementMs} ms total · ~5s visible ticks + on leave (tab must be visible)`}
             >
-              {v.pageEngagementMs > 0
-                ? formatDurationMs(v.pageEngagementMs)
-                : "—"}
+              {formatPageEngagementDisplay(v.pageEngagementMs, v.pageViews > 0)}
             </dd>
           </div>
         </dl>

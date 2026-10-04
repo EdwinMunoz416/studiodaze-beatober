@@ -35,34 +35,68 @@ export async function insertAnalyticsEvent(
 
   const sql = getSql();
   const propsJson = JSON.stringify(sanitizeProps(event.props ?? {}));
+  const dedupePageTick =
+    event.eventName === "page_engagement" &&
+    typeof event.props?.tick_id === "string";
 
-  await sql`
-    INSERT INTO analytics_events (
-      event_name,
-      visitor_id,
-      session_id,
-      day,
-      props,
-      path,
-      referrer_bucket,
-      referrer_source,
-      geo_country,
-      geo_region,
-      audience
-    ) VALUES (
-      ${event.eventName},
-      ${event.visitorId ?? null},
-      ${event.sessionId ?? null},
-      ${event.day ?? null},
-      ${propsJson}::jsonb,
-      ${event.path ?? null},
-      ${event.referrerBucket ?? null},
-      ${event.referrerSource ?? null},
-      ${event.geoCountry ?? null},
-      ${event.geoRegion ?? null},
-      ${audience}
-    )
-  `;
+  if (dedupePageTick) {
+    await sql`
+      INSERT INTO analytics_events (
+        event_name,
+        visitor_id,
+        session_id,
+        day,
+        props,
+        path,
+        referrer_bucket,
+        referrer_source,
+        geo_country,
+        geo_region,
+        audience
+      ) VALUES (
+        ${event.eventName},
+        ${event.visitorId ?? null},
+        ${event.sessionId ?? null},
+        ${event.day ?? null},
+        ${propsJson}::jsonb,
+        ${event.path ?? null},
+        ${event.referrerBucket ?? null},
+        ${event.referrerSource ?? null},
+        ${event.geoCountry ?? null},
+        ${event.geoRegion ?? null},
+        ${audience}
+      )
+      ON CONFLICT DO NOTHING
+    `;
+  } else {
+    await sql`
+      INSERT INTO analytics_events (
+        event_name,
+        visitor_id,
+        session_id,
+        day,
+        props,
+        path,
+        referrer_bucket,
+        referrer_source,
+        geo_country,
+        geo_region,
+        audience
+      ) VALUES (
+        ${event.eventName},
+        ${event.visitorId ?? null},
+        ${event.sessionId ?? null},
+        ${event.day ?? null},
+        ${propsJson}::jsonb,
+        ${event.path ?? null},
+        ${event.referrerBucket ?? null},
+        ${event.referrerSource ?? null},
+        ${event.geoCountry ?? null},
+        ${event.geoRegion ?? null},
+        ${audience}
+      )
+    `;
+  }
 
   if (event.visitorId) {
     await ensureVisitorIdentity(event.visitorId);

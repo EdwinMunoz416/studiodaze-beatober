@@ -1,15 +1,19 @@
 import { trackEvent } from "@/lib/analytics";
+import { getSessionId } from "@/lib/visitor-id";
 
-const MIN_ENGAGEMENT_MS = 1000;
+const MIN_ENGAGEMENT_MS = 100;
 const MAX_ENGAGEMENT_MS = 60 * 60 * 1000;
-/** Chunk long visible sessions (mirrors beat_listen) so totals survive tab kills. */
-const ENGAGEMENT_PROGRESS_MS = 30_000;
+/** Max ms credited in one tick (timer drift + background tab edge cases). */
+const MAX_TICK_MS = 6_000;
+const TICK_INTERVAL_MS = 5_000;
+const FIRST_TICK_MS = 500;
 
 type EngagementCtx = {
   surface: string;
   day: number | null;
   path: string;
-  startedAt: number;
+  sliceId: string;
+  seq: number;
   visibleSince: number;
   accumulatedVisibleMs: number;
 };
@@ -23,6 +27,7 @@ type EngagementOpts = {
 let current: EngagementCtx | null = null;
 let lastEngagementOpts: EngagementOpts | null = null;
 let progressTimer: ReturnType<typeof setInterval> | null = null;
+let firstTickTimer: ReturnType<typeof setTimeout> | null = null;
 let hooksInstalled = false;
 
 function visibleElapsed(ctx: EngagementCtx): number {
@@ -45,19 +50,47 @@ function clearProgressTimer(): void {
   }
 }
 
+function clearFirstTickTimer(): void {
+  if (firstTickTimer != null) {
+    clearTimeout(firstTickTimer);
+    firstTickTimer = null;
+  }
+}
+
+function makeSliceId(sessionId: string, opts: EngagementOpts): string {
+  const dayPart = opts.day != null ? String(opts.day) : "x";
+  const pathPart = opts.path.replace(/[^\w/-]/g, "_").slice(0, 64);
+  return `${sessionId.slice(0, 8)}-${pathPart}-${opts.surface}-${dayPart}-${Date.now()}`;
+}
+
+function resetVisibleAccumulation(ctx: EngagementCtx): EngagementCtx {
+  return {
+    ...ctx,
+    visibleSince: Date.now(),
+    accumulatedVisibleMs: 0,
+  };
+}
+
 function emitEngagement(
   ctx: EngagementCtx,
   durationMs: number,
   reason: EngagementFlushReason,
 ): void {
-  if (durationMs < MIN_ENGAGEMENT_MS) return;
+  const ms = Math.min(Math.floor(durationMs), MAX_TICK_MS);
+  if (ms < MIN_ENGAGEMENT_MS) return;
+
+  const tickId = `${ctx.sliceId}:${ctx.seq}`;
   trackEvent("page_engagement", {
     surface: ctx.surface,
     ...(ctx.day != null ? { day: ctx.day } : {}),
-    duration_ms: durationMs,
+    duration_ms: ms,
     reason,
     path: ctx.path,
+    slice_id: ctx.sliceId,
+    seq: ctx.seq,
+    tick_id: tickId,
   });
+  ctx.seq += 1;
 }
 
 type EngagementFlushReason =
@@ -65,27 +98,42 @@ type EngagementFlushReason =
   | "pagehide"
   | "hidden"
   | "day_change"
-  | "interval"
+  | "tick"
+  | "first_tick"
   | "unmount";
 
-function resetSliceAccumulation(ctx: EngagementCtx): EngagementCtx {
-  return {
-    ...ctx,
-    startedAt: Date.now(),
-    visibleSince: Date.now(),
-    accumulatedVisibleMs: 0,
-  };
+function emitVisibleDelta(reason: EngagementFlushReason): void {
+  const ctx = current;
+  if (!ctx) return;
+  if (
+    reason !== "hidden" &&
+    reason !== "pagehide" &&
+    reason !== "route_change" &&
+    reason !== "day_change" &&
+    reason !== "unmount" &&
+    document.visibilityState !== "visible"
+  ) {
+    return;
+  }
+
+  const durationMs = totalVisibleMs(ctx);
+  emitEngagement(ctx, durationMs, reason);
+  current = resetVisibleAccumulation(ctx);
 }
 
 function startProgressTimer(): void {
   clearProgressTimer();
   progressTimer = setInterval(() => {
-    const ctx = current;
-    if (!ctx || document.visibilityState !== "visible") return;
-    const durationMs = totalVisibleMs(ctx);
-    emitEngagement(ctx, durationMs, "interval");
-    current = resetSliceAccumulation(ctx);
-  }, ENGAGEMENT_PROGRESS_MS);
+    emitVisibleDelta("tick");
+  }, TICK_INTERVAL_MS);
+}
+
+function scheduleFirstTick(): void {
+  clearFirstTickTimer();
+  firstTickTimer = setTimeout(() => {
+    firstTickTimer = null;
+    emitVisibleDelta("first_tick");
+  }, FIRST_TICK_MS);
 }
 
 function flushEngagement(
@@ -96,6 +144,8 @@ function flushEngagement(
   if (!ctx) return;
 
   clearProgressTimer();
+  clearFirstTickTimer();
+
   const durationMs = totalVisibleMs(ctx);
   emitEngagement(ctx, durationMs, reason);
 
@@ -103,22 +153,26 @@ function flushEngagement(
   if (endSlice) {
     current = null;
   } else {
-    current = resetSliceAccumulation(ctx);
+    current = resetVisibleAccumulation(ctx);
     startProgressTimer();
+    scheduleFirstTick();
   }
 }
 
 function beginSlice(opts: EngagementOpts): void {
   lastEngagementOpts = opts;
+  const sessionId = getSessionId();
   current = {
     surface: opts.surface,
     day: opts.day,
     path: opts.path,
-    startedAt: Date.now(),
+    sliceId: makeSliceId(sessionId || "anon", opts),
+    seq: 0,
     visibleSince: Date.now(),
     accumulatedVisibleMs: 0,
   };
   startProgressTimer();
+  scheduleFirstTick();
 }
 
 function onVisibilityChange(): void {

@@ -78,9 +78,9 @@ Share a day: **`/day/3`** (OG image for social previews). Sitemap: `/sitemap.xml
 
 **Visitor identity** (admin only): see **`docs/admin-visitor-identity.md`**. Pool in Neon (`identity_pool`); grows via migrate, `db:expand-pool`, or on assign. `db:migrate` backfills + reconciles visitor rows.
 
-Events: `page_view` (`referrer_source`, `geo_country` / `geo_region` from Vercel edge on ingest), … Admin **Geography** = first-touch country, US regions, EU countries + subregions.
+Events: `page_view` (`referrer_source`, `geo_country` / `geo_region` from Vercel edge on ingest), `page_engagement` (visible tab time in ~5s idempotent ticks + on leave; admin **On page** = sum of `duration_ms`), … Admin **Geography** = first-touch country, US regions, EU countries + subregions.
 
-After deploy: `npm run db:migrate` (adds `analytics_events` if missing).
+`npm run build` runs `db:migrate` (schema + indexes, including `page_engagement` dedupe).
 
 ## Font
 
