@@ -31,6 +31,11 @@ const nextConfig: NextConfig = {
         "@strudel/web": strudelWebEntry,
       };
     }
+    // Next 16.4 webpack errors on @strudel/web's overlapping `export *`.
+    config.module.parser.javascript = {
+      ...config.module.parser.javascript,
+      reexportExportsPresence: false,
+    };
     return config;
   },
 };

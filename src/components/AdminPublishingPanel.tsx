@@ -17,8 +17,6 @@ type Props = {
   year: number;
   month: number;
   days: AdminDay[] | null;
-  togglingDay: number | null;
-  onToggle: (day: number, approved: boolean) => void;
   error: string | null;
 };
 
@@ -38,8 +36,6 @@ export function AdminPublishingPanel({
   year,
   month,
   days,
-  togglingDay,
-  onToggle,
   error,
 }: Props) {
   const calendar: BeatoberCalendar = { year, month };
@@ -50,13 +46,14 @@ export function AdminPublishingPanel({
       <summary className="admin-dash__secondary-summary">
         <span className="admin-dash__secondary-title">Publishing &amp; approvals</span>
         <span className="admin-dash__secondary-hint">
-          calendar unlock · approve day posts
+          read-only · season archived
         </span>
       </summary>
       <div className="admin-dash__secondary-body">
         {error ? <p className="admin-dash__error">{error}</p> : null}
         <p className="admin-dash__note">
-          Visitors see a day when it is approved and its calendar date has arrived.
+          Approvals are frozen. Visitors see a day when it is approved and its
+          calendar date has arrived.
         </p>
         <div className="admin-dash__table-wrap">
           <table className="admin-dash__table">
@@ -66,13 +63,12 @@ export function AdminPublishingPanel({
                 <th>Title</th>
                 <th>Status</th>
                 <th>Beat</th>
-                <th />
               </tr>
             </thead>
             <tbody>
               {!days ? (
                 <tr>
-                  <td colSpan={5} className="admin-dash__empty-cell">
+                  <td colSpan={4} className="admin-dash__empty-cell">
                     Loading…
                   </td>
                 </tr>
@@ -87,20 +83,6 @@ export function AdminPublishingPanel({
                     <td>{row.title ?? "—"}</td>
                     <td>{publicStatus(row, calendar, now)}</td>
                     <td>{row.audioUrl ? "yes" : "—"}</td>
-                    <td className="admin-dash__table-action">
-                      <button
-                        type="button"
-                        className="admin-dash__btn admin-dash__btn--compact"
-                        disabled={togglingDay === row.day}
-                        onClick={() => void onToggle(row.day, !row.approved)}
-                      >
-                        {togglingDay === row.day
-                          ? "…"
-                          : row.approved
-                            ? "Revoke"
-                            : "Approve"}
-                      </button>
-                    </td>
                   </tr>
                 ))
               )}

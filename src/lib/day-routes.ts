@@ -8,12 +8,10 @@ export function dayPath(day: number): string {
   return `/day/${day}`;
 }
 
+const CANONICAL_SITE_URL = "https://www.studio-daze.com";
+
 export function siteBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configured) return configured.replace(/\/$/, "");
+  return CANONICAL_SITE_URL;
 }

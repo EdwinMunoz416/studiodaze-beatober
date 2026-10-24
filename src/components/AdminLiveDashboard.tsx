@@ -19,8 +19,6 @@ type Props = {
 
 export function AdminLiveDashboard({ initialAuthed }: Props) {
   const [authed, setAuthed] = useState(initialAuthed);
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState<string | null>(null);
   const [audience, setAudience] = useState<LiveAudience>("visitor");
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -63,21 +61,6 @@ export function AdminLiveDashboard({ initialAuthed }: Props) {
     return () => window.clearInterval(id);
   }, [authed, load]);
 
-  const login = async () => {
-    setLoginError(null);
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (!res.ok) {
-      setLoginError("Invalid password");
-      return;
-    }
-    setAuthed(true);
-    setPassword("");
-  };
-
   const logout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
     setAuthed(false);
@@ -86,13 +69,7 @@ export function AdminLiveDashboard({ initialAuthed }: Props) {
 
   if (!authed) {
     return (
-      <AdminLoginPage
-        title="Live"
-        password={password}
-        error={loginError}
-        onPasswordChange={setPassword}
-        onSubmit={() => void login()}
-      />
+      <AdminLoginPage title="Live" />
     );
   }
 

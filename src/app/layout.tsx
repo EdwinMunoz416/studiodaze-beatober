@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/react";
 import { AnalyticsBootstrap } from "@/components/AnalyticsBootstrap";
+import { siteBaseUrl } from "@/lib/day-routes";
 import { PREVIEW_BACKGROUND_URL } from "@/lib/site-branding";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteBaseUrl()),
   title: "studio daze · beatober",
   description: "Daily beats and Strudel patterns — October 2026",
   icons: {
@@ -20,7 +21,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="beatober-body">
         <AnalyticsBootstrap />
         {children}
-        <Analytics />
       </body>
     </html>
   );

@@ -1,4 +1,3 @@
-import { isAdminSession } from "@/lib/admin-auth";
 import { loadBeatoberStateSafe } from "@/lib/day-store";
 import { resolveShellViewDay } from "@/lib/resolve-shell-day";
 
@@ -15,9 +14,7 @@ export async function loadBeatoberHomePayload(
   routeDay?: number,
 ): Promise<BeatoberHomePayload> {
   const now = new Date();
-  const envAuthor = process.env.NEXT_PUBLIC_BEATOBER_AUTHOR === "1";
-  const adminSession = await isAdminSession();
-  const canPublish = envAuthor || adminSession;
+  const canPublish = false;
   const { manifest, patterns } = await loadBeatoberStateSafe();
   const initialSelectedDay = resolveShellViewDay(
     manifest,
