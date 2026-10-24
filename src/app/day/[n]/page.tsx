@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const url = `${base}${dayPath(day)}`;
 
   return {
+    metadataBase: new URL(base),
     title: `${title} · studio-daze beatober`,
     description: `Strudel pattern and beat — October day ${day}.`,
     openGraph: {

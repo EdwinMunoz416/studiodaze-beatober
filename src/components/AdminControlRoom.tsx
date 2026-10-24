@@ -30,15 +30,12 @@ type AdminDaysPayload = {
 
 export function AdminControlRoom({ initialAuthed }: Props) {
   const [authed, setAuthed] = useState(initialAuthed);
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [audience, setAudience] = useState<MetricsAudience>("visitor");
   const [schedule, setSchedule] = useState<AdminDaysPayload | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
-  const [togglingDay, setTogglingDay] = useState<number | null>(null);
 
   const loadSchedule = useCallback(async () => {
     setScheduleError(null);
@@ -95,56 +92,6 @@ export function AdminControlRoom({ initialAuthed }: Props) {
     if (authed) void loadSchedule();
   }, [authed, loadSchedule]);
 
-  const toggleDayApproved = async (day: number, approved: boolean) => {
-    setTogglingDay(day);
-    setScheduleError(null);
-    try {
-      const res = await fetch(`/api/day/${day}/approve`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approved }),
-      });
-      if (res.status === 401) {
-        setAuthed(false);
-        return;
-      }
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error ?? "Could not update approval");
-      }
-      setSchedule((prev) =>
-        prev
-          ? {
-              ...prev,
-              days: prev.days.map((d) =>
-                d.day === day ? { ...d, approved } : d,
-              ),
-            }
-          : prev,
-      );
-    } catch (err) {
-      setScheduleError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setTogglingDay(null);
-    }
-  };
-
-  const login = async () => {
-    setLoginError(null);
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (!res.ok) {
-      setLoginError("Invalid password");
-      return;
-    }
-    setAuthed(true);
-    setPassword("");
-  };
-
   const logout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
     setAuthed(false);
@@ -162,13 +109,7 @@ export function AdminControlRoom({ initialAuthed }: Props) {
 
   if (!authed) {
     return (
-      <AdminLoginPage
-        title="Metrics"
-        password={password}
-        error={loginError}
-        onPasswordChange={setPassword}
-        onSubmit={() => void login()}
-      />
+      <AdminLoginPage title="Metrics" />
     );
   }
 
@@ -284,8 +225,6 @@ export function AdminControlRoom({ initialAuthed }: Props) {
         year={schedule?.year ?? new Date().getFullYear()}
         month={schedule?.month ?? 10}
         days={schedule?.days ?? null}
-        togglingDay={togglingDay}
-        onToggle={(day, approved) => void toggleDayApproved(day, approved)}
         error={scheduleError}
       />
     </AdminShell>

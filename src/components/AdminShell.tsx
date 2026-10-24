@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ARCHIVED_MESSAGE } from "@/lib/archived";
 
 type NavId = "live" | "metrics" | "devices";
 
@@ -75,19 +76,7 @@ export function AdminShell({
   );
 }
 
-export function AdminLoginPage({
-  title,
-  error,
-  password,
-  onPasswordChange,
-  onSubmit,
-}: {
-  title: string;
-  error: string | null;
-  password: string;
-  onPasswordChange: (value: string) => void;
-  onSubmit: () => void;
-}) {
+export function AdminLoginPage({ title }: { title: string }) {
   return (
     <div className="admin-dash admin-dash--login">
       <div className="admin-dash__login-card">
@@ -96,20 +85,8 @@ export function AdminLoginPage({
           <span className="admin-dash__brand-sub">beatober admin</span>
         </Link>
         <h1 className="admin-dash__login-title">{title}</h1>
-        <p className="admin-dash__login-note">Use your BEATOBER_AUTHOR_SECRET.</p>
-        <input
-          type="password"
-          className="admin-dash__input"
-          placeholder="password"
-          value={password}
-          onChange={(e) => onPasswordChange(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onSubmit()}
-          autoComplete="current-password"
-        />
-        <button type="button" className="admin-dash__btn" onClick={onSubmit}>
-          Enter
-        </button>
-        {error ? <p className="admin-dash__error">{error}</p> : null}
+        <p className="admin-dash__login-note">{ARCHIVED_MESSAGE}</p>
+        <p className="admin-dash__note">Sign-in and editing are closed.</p>
         <Link href="/" className="admin-dash__back-link">
           ← back to site
         </Link>
